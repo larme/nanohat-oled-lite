@@ -127,6 +127,10 @@ class OLEDCtrl(object):
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
 
+        time.sleep(0.5)
+
+        # do it again just in case
+        self.display_off()
         time.sleep(1)
 
         if self.state == SHUTDOWN:
