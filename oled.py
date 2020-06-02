@@ -57,7 +57,6 @@ class OLEDCtrl(object):
 
         # initialize GPIO
         for key in self.keys:
-            print(key)
             with open('/sys/class/gpio/export', 'w') as f:
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
@@ -122,9 +121,10 @@ class OLEDCtrl(object):
         self.display_off()
 
         # release GPIO
-        with open('/sys/class/gpio/unexport', 'w') as f:
-            for key in self.keys:
-                f.write('%d\n' % key)
+        for key in self.keys:
+            with open('/sys/class/gpio/unexport', 'w') as f:
+                pin = self.key2pin[key]
+                f.write('%d\n' % pin)
 
         if self.state == SHUTDOWN:
             # os.system('shutdown now')
