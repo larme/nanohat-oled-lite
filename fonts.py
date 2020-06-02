@@ -101,6 +101,6 @@ inverted_font = {}
 
 for c, l in normal_font.items():
     new_l = [i ^ 0xff for i in l]
-    inverted_font[c] = l
+    inverted_font[c] = new_l
 
 unknown_char = [0xff, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xff]
