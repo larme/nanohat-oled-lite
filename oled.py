@@ -12,6 +12,7 @@ KEY2PIN = {
     3: 3,
 }
 
+REBOOT = 98
 SHUTDOWN = 99
 
 def chunks(lst, n):
@@ -126,9 +127,14 @@ class OLEDCtrl(object):
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
 
+        time.sleep(1)
+
         if self.state == SHUTDOWN:
-            print('shutdown!')
+            print("shutdown!")
             os.system('shutdown now')
+        elif self.state == REBOOT:
+            print("reboot!")
+            os.system('reboot')
         else:
             exit(0)
 
