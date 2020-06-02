@@ -34,6 +34,8 @@ class OLEDCtrl(object):
         self.bus = smbus.SMBus(bus_num)
         self.polling_interval = polling_interval
         self.display_off_timeout = display_off_timeout
+        self.line_length = line_length
+        self.line_num = line_num
 
         self.loop_break = False
         self.display_refresh_time = 0
@@ -50,8 +52,9 @@ class OLEDCtrl(object):
     def init_setup(self):
 
         # initialize GPIO
-        with open('/sys/class/gpio/export') as f:
-            for key in self.keys:
+        for key in self.keys:
+            print(key)
+            with open('/sys/class/gpio/export') as f:
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
             
@@ -134,7 +137,7 @@ class OLEDCtrl(object):
             print(' CTRL+C detected')
 
         finally:
-            slef.cleanup()
+            self.cleanup()
 
     def keydown(self, idx):
         dev_tmpl = '/sys/class/gpio/gpio%d/value'
@@ -152,7 +155,7 @@ class OLEDCtrl(object):
 
     def putline(self, line, pos=None, inverted=False):
         if not pos:
-            if self.lines():
+            if self.lines:
                 pos = max(self.lines.keys()) + 1
             else:
                 pos = 0
@@ -183,7 +186,7 @@ class OLEDCtrl(object):
         bs = [b for idx in range(self.line_num)
               for b in self.lines.get(idx, empty_line)]
 
-        self.draw_bytes(self, bs)
+        self.draw_bytes(bs)
 
     def clear_lines(self):
         for i in range(self.line_num):
@@ -205,7 +208,7 @@ class OLEDCtrl(object):
 
     def gen_random_splash(self):
         byte_num = int(128 * 64 / 8)
-        self.splash = [random.randrange(256) for i in byte_num]
+        self.splash = [random.randrange(256) for i in range(byte_num)]
 
     def extent_display_off_time(self, base_time=None, timeout=None):
         if not base_time:
