@@ -95,7 +95,7 @@ class OLEDCtrl(object):
         while not self.loop_break:
             time.sleep(self.polling_interval)
             self.current_time = time.time()
-            print(self.state)
+
             if self.keydown(1):
                 continue
 
@@ -127,9 +127,8 @@ class OLEDCtrl(object):
                 f.write('%d\n' % pin)
 
         if self.state == SHUTDOWN:
-            # os.system('shutdown now')
             print('shutdown!')
-            exit(0)
+            os.system('shutdown now')
         else:
             exit(0)
 
