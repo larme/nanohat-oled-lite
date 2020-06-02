@@ -41,6 +41,7 @@ def main():
     state2keymap[2] = [1, 0, 3]
     state2keymap[3] = [1, 2, 4]
     state2keymap[4] = [SHUTDOWN, 4, 3]
+    state2keymap[SHUTDOWN] = [0, 0, 0]
     
     state2cmd = {}
     state2cmd[0] = zero_f
@@ -52,6 +53,7 @@ def main():
     state2cmd[SHUTDOWN] = shutdown_f
 
     main_ctrl = OLEDCtrl(state2keymap, state2cmd)
+    main_ctrl.run()
 
 if __name__ == '__main__':
     main()

@@ -39,11 +39,13 @@ class OLEDCtrl(object):
 
         self.loop_break = False
         self.display_refresh_time = 0
+        self.current_time = time.time()
         self.extent_display_off_time()
 
         self.display_already_off = False
 
         self.state = 0
+        self.keymap = self.state2keymap[self.state]
         self.lines = {}
 
         self.splash = []
@@ -51,10 +53,12 @@ class OLEDCtrl(object):
 
     def init_setup(self):
 
+        self.current_time = time.time()
+
         # initialize GPIO
         for key in self.keys:
             print(key)
-            with open('/sys/class/gpio/export') as f:
+            with open('/sys/class/gpio/export', 'w') as f:
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
             
@@ -65,7 +69,7 @@ class OLEDCtrl(object):
             with open(path, 'w') as f:
                 f.write('in\n')
 
-        self.write_i2c_block_data(0x3c, 0x00, [
+        self.bus.write_i2c_block_data(0x3c, 0x00, [
             0xae,       # set display off
             0x00,       # set lower column address
             0x10,       # set higher column address
@@ -91,24 +95,25 @@ class OLEDCtrl(object):
 
         while not self.loop_break:
             time.sleep(self.polling_interval)
-
-            if keydown(1):
+            self.current_time = time.time()
+            print(self.state)
+            if self.keydown(1):
                 continue
 
-            if keydown(2):
+            if self.keydown(2):
                 continue
 
-            if keydown(3):
+            if self.keydown(3):
                 continue
 
             # not here until all key are released
-            current_time = time.time()
+            self.keymap = self.state2keymap[self.state]
 
-            if current_time > self.display_off_time:
+            if self.current_time > self.display_off_time:
                 self.display_off()
                 continue
  
-            elif current_time > self.display_refresh_time:
+            elif self.current_time > self.display_refresh_time:
                 self.display_on()
                 self.state2cmd[self.state](self)
 
@@ -145,8 +150,7 @@ class OLEDCtrl(object):
         dev = dev_tmpl % pin
         with open(dev) as f:
             if f.read(1) == '1':
-                keymap = self.state2keymap[self.state]
-                self.state = keymap[idx - 1]
+                self.state = self.keymap[idx - 1]
                 self.display_refresh_time = 0
                 self.extent_display_off_time()
                 return True
@@ -190,7 +194,8 @@ class OLEDCtrl(object):
 
     def clear_lines(self):
         for i in range(self.line_num):
-            del(self.lines[i])
+            if i in self.lines:
+                del(self.lines[i])
 
     def display_off(self):
         if not self.display_already_off:
@@ -210,11 +215,9 @@ class OLEDCtrl(object):
         byte_num = int(128 * 64 / 8)
         self.splash = [random.randrange(256) for i in range(byte_num)]
 
-    def extent_display_off_time(self, base_time=None, timeout=None):
-        if not base_time:
-            base_time = time.time()
+    def extent_display_off_time(self, timeout=None):
 
         if not timeout:
             timeout = self.display_off_timeout
 
-        self.display_off_time = base_time + timeout
+        self.display_off_time = self.current_time + timeout
