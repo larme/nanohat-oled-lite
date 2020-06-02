@@ -171,7 +171,7 @@ class OLEDCtrl(object):
         if diff > 0:
             line = line + ' ' * diff
         else:
-            line = line[self.line_length]
+            line = line[:self.line_length]
 
         if inverted:
             font = inverted_font
