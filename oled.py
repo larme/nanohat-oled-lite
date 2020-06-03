@@ -145,8 +145,8 @@ class OLEDCtrl(object):
             self.init_setup()
             self.loop()
 
-        except KeyboardInterrupt:
-            print(' CTRL+C detected')
+        except Exception as e:
+            print("Error:", e)
 
         finally:
             self.cleanup()
