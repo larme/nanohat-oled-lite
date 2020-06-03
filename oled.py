@@ -41,7 +41,7 @@ class OLEDCtrl(object):
         self.loop_break = False
         self.display_refresh_time = 0
         self.current_time = time.time()
-        self.extent_display_off_time()
+        self.extend_display_off_time()
 
         self.display_already_off = False
 
@@ -161,7 +161,7 @@ class OLEDCtrl(object):
             if f.read(1) == '1':
                 self.state = self.keymap[idx - 1]
                 self.display_refresh_time = 0
-                self.extent_display_off_time()
+                self.extend_display_off_time()
                 return True
             else:
                 return False
@@ -224,8 +224,7 @@ class OLEDCtrl(object):
         byte_num = int(128 * 64 / 8)
         self.splash = [random.randrange(256) for i in range(byte_num)]
 
-    def extent_display_off_time(self, timeout=None):
-
+    def extend_display_off_time(self, timeout=None):
         if not timeout:
             timeout = self.display_off_timeout
 
