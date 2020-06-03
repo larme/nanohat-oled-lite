@@ -119,7 +119,7 @@ class OLEDCtrl(object):
 
     def cleanup(self):
 
-        self.display_off()
+        self.display_off(force=True)
 
         # release GPIO
         for key in self.keys:
@@ -127,10 +127,8 @@ class OLEDCtrl(object):
                 pin = self.key2pin[key]
                 f.write('%d\n' % pin)
 
-        time.sleep(0.5)
-
         # do it again just in case
-        self.display_off()
+        self.display_off(force=True)
         time.sleep(1)
 
         if self.state == SHUTDOWN:
@@ -206,14 +204,15 @@ class OLEDCtrl(object):
             if i in self.lines:
                 del(self.lines[i])
 
-    def display_off(self):
-        if not self.display_already_off:
+    def display_off(self, force=False):
+        if (not self.display_already_off) or force:
             self.bus.write_i2c_block_data(0x3c, 0x00, [0xae])
             self.gen_random_splash()
             self.display_already_off = True
 
     def display_on(self):
         self.bus.write_i2c_block_data(0x3c, 0x00, [0xaf])
+        self.display_already_off = False
 
     def draw_bytes(self, bs):
         blocks = chunks(bs, 32)

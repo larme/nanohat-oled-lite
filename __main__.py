@@ -52,9 +52,11 @@ def five_f(ctrl):
 
 def shutdown_f(ctrl):
     ctrl.loop_break = True
+    ctrl.display_off(force=True)
 
 def reboot_f(ctrl):
     ctrl.loop_break = True
+    ctrl.display_off(force=True)
 
 def main():
     state2keymap = {}
