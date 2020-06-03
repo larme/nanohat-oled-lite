@@ -3,19 +3,21 @@ from oled import OLEDCtrl, SHUTDOWN, REBOOT
 
 def zero_f(ctrl):
     ctrl.draw_bytes(ctrl.splash)
-    ctrl.display_refresh_time = time.time() + ctrl.display_off_timeout
+    ctrl.extend_display_next_refresh_time(10)
 
 def one_f(ctrl):
     ctrl.clear_lines()
     ctrl.putline('1 pressed')
     ctrl.putline('1 pressed', inverted=True)
     ctrl.display_flush()
+    ctrl.extend_display_next_refresh_time(100)
 
 def two_f(ctrl):
     ctrl.clear_lines()
     ctrl.putline('2 pressed')
     ctrl.putline('2 pressed', inverted=True)
     ctrl.display_flush()
+    ctrl.extend_display_next_refresh_time(2)
 
 def three_f(ctrl):
     ctrl.clear_lines()
@@ -27,6 +29,7 @@ def three_f(ctrl):
     ctrl.putline('F1: Confirm')
     ctrl.putline('F3: Cycle opts')
     ctrl.display_flush()
+    ctrl.extend_display_next_refresh_time(5)
 
 def four_f(ctrl):
     ctrl.clear_lines()
@@ -38,6 +41,7 @@ def four_f(ctrl):
     ctrl.putline('F1: Confirm')
     ctrl.putline('F3: Cycle opts')
     ctrl.display_flush()
+    ctrl.extend_display_next_refresh_time(5)
 
 def five_f(ctrl):
     ctrl.clear_lines()
@@ -49,6 +53,7 @@ def five_f(ctrl):
     ctrl.putline('F1: Confirm')
     ctrl.putline('F3: Cycle opts')
     ctrl.display_flush()
+    ctrl.extend_display_next_refresh_time(5)
 
 def shutdown_f(ctrl):
     ctrl.loop_break = True

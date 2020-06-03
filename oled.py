@@ -228,3 +228,6 @@ class OLEDCtrl(object):
             timeout = self.display_off_timeout
 
         self.display_off_time = self.current_time + timeout
+
+    def extend_display_next_refresh_time(self, timeout=1):
+        self.display_refresh_time = self.current_time + timeout
