@@ -164,27 +164,41 @@ class OLEDCtrl(object):
             else:
                 return False
 
-    def putline(self, line, pos=None, inverted=False):
+    def putline(self, line, pos=None, inverted=False, truncate=True):
         if not pos:
             if self.lines:
                 pos = max(self.lines.keys()) + 1
             else:
                 pos = 0
 
+        char_num = len(line)
+
+        if char_num > self.line_length:
+            if truncate:
+                line = line[:self.line_length]
+                lines = [line]
+            else:
+                lines = list(chunks(line, self.line_length))
+        else:
+            lines = [line]
+
+        for idx, line in enumerate(lines):
+            self._putline(line, pos + idx, inverted)
+
+    # here len(line) <= self.line_length
+    def _putline(self, line, pos, inverted):
+
         if pos >= self.line_num:
             return
-
-        char_num = len(line)
-        diff = self.line_length - char_num
-        if diff > 0:
-            line = line + ' ' * diff
-        else:
-            line = line[:self.line_length]
 
         if inverted:
             font = inverted_font
         else:
             font = normal_font
+
+        char_num = len(line)
+        diff = self.line_length - char_num
+        line = line + ' ' * diff
 
         line_bs = [b for c in line for b in font.get(c, unknown_char)]
 

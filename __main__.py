@@ -10,7 +10,7 @@ def one_f(ctrl):
     ctrl.putline('1 pressed')
     ctrl.putline('1 pressed', inverted=True)
     ctrl.display_flush()
-    ctrl.extend_display_next_refresh_time(100)
+    ctrl.extend_display_next_refresh_time(10)
 
 def two_f(ctrl):
     ctrl.clear_lines()
