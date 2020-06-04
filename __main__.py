@@ -64,28 +64,28 @@ def reboot_f(ctrl):
     ctrl.display_off(force=True)
 
 def main():
-    state2keymap = {}
-    state2keymap[0] = [1, 2, 3]
-    state2keymap[1] = [0, 2, 3]
-    state2keymap[2] = [1, 0, 3]
-    state2keymap[3] = [1, 2, 4]
-    state2keymap[4] = [SHUTDOWN, 4, 5]
-    state2keymap[5] = [REBOOT, 5, 3]
-    state2keymap[SHUTDOWN] = [0, 0, 0]
-    state2keymap[REBOOT] = [0, 0, 0]
+    scene2keymap = {}
+    scene2keymap[0] = [1, 2, 3]
+    scene2keymap[1] = [0, 2, 3]
+    scene2keymap[2] = [1, 0, 3]
+    scene2keymap[3] = [1, 2, 4]
+    scene2keymap[4] = [SHUTDOWN, 4, 5]
+    scene2keymap[5] = [REBOOT, 5, 3]
+    scene2keymap[SHUTDOWN] = [0, 0, 0]
+    scene2keymap[REBOOT] = [0, 0, 0]
     
-    state2cmd = {}
-    state2cmd[0] = zero_f
-    state2cmd[1] = one_f
-    state2cmd[2] = two_f
-    state2cmd[3] = three_f
-    state2cmd[4] = four_f
-    state2cmd[5] = five_f
+    scene2cmd = {}
+    scene2cmd[0] = zero_f
+    scene2cmd[1] = one_f
+    scene2cmd[2] = two_f
+    scene2cmd[3] = three_f
+    scene2cmd[4] = four_f
+    scene2cmd[5] = five_f
 
-    state2cmd[SHUTDOWN] = shutdown_f
-    state2cmd[REBOOT] = reboot_f
+    scene2cmd[SHUTDOWN] = shutdown_f
+    scene2cmd[REBOOT] = reboot_f
 
-    main_ctrl = OLEDCtrl(state2keymap, state2cmd)
+    main_ctrl = OLEDCtrl(scene2keymap, scene2cmd)
     main_ctrl.run()
 
 if __name__ == '__main__':

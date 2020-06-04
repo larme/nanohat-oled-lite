@@ -23,13 +23,11 @@ def chunks(lst, n):
 
 class OLEDCtrl(object):
 
-    def __init__(self, state2keymap, state2cmd,
+    def __init__(self, init_scene,
                  key2pin=KEY2PIN, keys=(1, 2, 3),
                  bus_num=0, polling_interval=0.05, display_off_timeout=30.0,
                  line_length=16, line_num=8):
 
-        self.state2keymap = state2keymap
-        self.state2cmd = state2cmd
         self.keys = keys
         self.key2pin = key2pin
         self.bus = smbus.SMBus(bus_num)
@@ -45,9 +43,10 @@ class OLEDCtrl(object):
 
         self.display_already_off = False
 
-        self.state = 0
-        self.keymap = self.state2keymap[self.state]
+        self.scene = init_scene
+        self.pending_key = None
         self.lines = {}
+        self.buffer = {}
 
         self.splash = []
         self.gen_random_splash()
@@ -107,7 +106,15 @@ class OLEDCtrl(object):
                 continue
 
             # not here until all key are released
-            self.keymap = self.state2keymap[self.state]
+            # if pending_key exists, update scene use the corresponding
+            if self.pending_key:
+                new_scene = self.scene.handle_key(self.pending_key)
+
+                if new_scene:
+                    self.scene = new_scene
+                    self.scene.init(self)
+
+                self.pending_key = None
 
             if self.current_time > self.display_off_time:
                 self.display_off()
@@ -115,7 +122,16 @@ class OLEDCtrl(object):
  
             elif self.current_time > self.display_refresh_time:
                 self.display_on()
-                self.state2cmd[self.state](self)
+                s = self.scene
+                if s.clear:
+                    self.clear_lines()
+
+                # scene draw lines to self.lines
+                s.draw(self)
+                self.render(clear=s.clear,
+                            flush=s.flush,
+                            refresh_interval=s.refresh_interval)
+
 
     def cleanup(self):
 
@@ -131,10 +147,10 @@ class OLEDCtrl(object):
         self.display_off(force=True)
         time.sleep(1)
 
-        if self.state == SHUTDOWN:
+        if self.scene == SHUTDOWN:
             print("shutdown!")
             os.system('shutdown now')
-        elif self.state == REBOOT:
+        elif self.scene == REBOOT:
             print("reboot!")
             os.system('reboot')
         else:
@@ -157,36 +173,76 @@ class OLEDCtrl(object):
         dev = dev_tmpl % pin
         with open(dev) as f:
             if f.read(1) == '1':
-                self.state = self.keymap[idx - 1]
+                self.pending_key = idx
                 self.display_refresh_time = 0
                 self.extend_display_off_time()
                 return True
             else:
                 return False
 
-    def putline(self, line, pos=None, inverted=False, truncate=True):
+    def putline(self, line, pos=None, inverted=False, mode='scroll'):
         if not pos:
             if self.lines:
                 pos = max(self.lines.keys()) + 1
             else:
                 pos = 0
 
+        if pos > self.line_num:
+            return
+
+        self.lines[pos] = (line, inverted, mode)
+
+    def render(self, clear, flush, refresh_interval):
+        if clear:
+            self.clear_buffer()
+
+        if flush:
+            self.display_flush()
+
+        if refresh_interval > 0:
+            self.set_display_next_refresh_time(refresh_interval)
+
+    def display_flush(self):
+        self.lines_to_buffer()
+        self.render_buffer()
+
+    def lines_to_buffer(self):
+        for pos in range(self.line_num):
+            line = self.lines.get(pos)
+            if line:
+                self.line_to_buffer(pos, *line)
+
+    def line_to_buffer(self, pos, line, inverted, mode):
+
+        if pos >= self.line_num:
+            return
+
         char_num = len(line)
 
         if char_num > self.line_length:
-            if truncate:
+            if mode == 'truncate':
                 line = line[:self.line_length]
                 lines = [line]
-            else:
+
+            # wrap
+            elif mode == 'wrap':
                 lines = list(chunks(line, self.line_length))
+
+            # mode == 'scroll'
+            else:
+                frame = self.scene.frame
+                start = frame % self.char_num
+                end = start + self.line_length
+                line = line[start:end]
+                lines = [line]
         else:
             lines = [line]
 
         for idx, line in enumerate(lines):
-            self._putline(line, pos + idx, inverted)
+            self._putline(pos + idx, line, inverted)
 
     # here len(line) <= self.line_length
-    def _putline(self, line, pos, inverted):
+    def _line_to_buffer(self, pos, line, inverted):
 
         if pos >= self.line_num:
             return
@@ -202,16 +258,26 @@ class OLEDCtrl(object):
 
         line_bs = [b for c in line for b in font.get(c, unknown_char)]
 
-        self.lines[pos] = line_bs
+        self.buffer[pos] = line_bs
 
-    def display_flush(self):
+    def render_buffer(self):
         space = normal_font[' ']
         empty_line = space * self.line_length
 
         bs = [b for idx in range(self.line_num)
-              for b in self.lines.get(idx, empty_line)]
+              for b in self.buffer.get(idx, empty_line)]
 
-        self.draw_bytes(bs)
+        self._render_bytes(bs)
+
+    def _render_bytes(self, bs):
+        blocks = chunks(bs, 32)
+        for block in blocks:
+            self.bus.write_i2c_block_data(0x3c, 0x40, block)
+
+    def clear_buffer(self):
+        for i in range(self.line_num):
+            if i in self.buffer:
+                del(self.buffer[i])
 
     def clear_lines(self):
         for i in range(self.line_num):
@@ -228,11 +294,6 @@ class OLEDCtrl(object):
         self.bus.write_i2c_block_data(0x3c, 0x00, [0xaf])
         self.display_already_off = False
 
-    def draw_bytes(self, bs):
-        blocks = chunks(bs, 32)
-        for block in blocks:
-            self.bus.write_i2c_block_data(0x3c, 0x40, block)
-
     def gen_random_splash(self):
         byte_num = int(128 * 64 / 8)
         self.splash = [random.randrange(256) for i in range(byte_num)]
@@ -243,5 +304,5 @@ class OLEDCtrl(object):
 
         self.display_off_time = self.current_time + timeout
 
-    def extend_display_next_refresh_time(self, timeout=1):
+    def set_display_next_refresh_time(self, timeout=1):
         self.display_refresh_time = self.current_time + timeout
