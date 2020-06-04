@@ -12,8 +12,8 @@ KEY2PIN = {
     3: 3,
 }
 
-REBOOT = 98
-SHUTDOWN = 99
+REBOOT = -2
+SHUTDOWN = -1
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
