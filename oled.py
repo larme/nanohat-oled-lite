@@ -120,6 +120,7 @@ class OLEDCtrl(object):
                 self.display_off()
                 continue
  
+            # one more frame
             elif self.current_time > self.display_refresh_time:
                 self.display_on()
                 s = self.scene
@@ -127,10 +128,12 @@ class OLEDCtrl(object):
                     self.clear_lines()
 
                 # scene draw lines to self.lines
-                s.draw(self)
+                print(s.frame)
+                inc_frame = s.draw(self)
                 self.render(clear=s.clear,
                             flush=s.flush,
                             refresh_interval=s.refresh_interval)
+                s.frame += inc_frame
 
 
     def cleanup(self):
@@ -180,7 +183,7 @@ class OLEDCtrl(object):
             else:
                 return False
 
-    def putline(self, line, pos=None, inverted=False, mode='scroll'):
+    def putline(self, line, pos=None, inverted=False, mode='truncate'):
         if not pos:
             if self.lines:
                 pos = max(self.lines.keys()) + 1
@@ -220,26 +223,26 @@ class OLEDCtrl(object):
         char_num = len(line)
 
         if char_num > self.line_length:
-            if mode == 'truncate':
-                line = line[:self.line_length]
+
+            if mode == 'scroll':
+                frame = self.scene.frame
+                start = frame % char_num
+                end = start + self.line_length
+                line = line[start:end]
                 lines = [line]
 
-            # wrap
             elif mode == 'wrap':
                 lines = list(chunks(line, self.line_length))
 
-            # mode == 'scroll'
+            # mode == 'truncate'
             else:
-                frame = self.scene.frame
-                start = frame % self.char_num
-                end = start + self.line_length
-                line = line[start:end]
+                line = line[:self.line_length]
                 lines = [line]
         else:
             lines = [line]
 
         for idx, line in enumerate(lines):
-            self._putline(pos + idx, line, inverted)
+            self._line_to_buffer(pos + idx, line, inverted)
 
     # here len(line) <= self.line_length
     def _line_to_buffer(self, pos, line, inverted):
