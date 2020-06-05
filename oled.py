@@ -237,6 +237,9 @@ class OLEDCtrl(object):
         if pos >= self.line_num:
             return
 
+        if not line:
+            line = ''
+
         char_num = len(line)
 
         if char_num > self.line_length:
@@ -266,6 +269,9 @@ class OLEDCtrl(object):
 
         if pos >= self.line_num:
             return
+
+        if not line:
+            line = ''
 
         if inverted:
             font = inverted_font

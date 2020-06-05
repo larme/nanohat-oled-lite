@@ -3,6 +3,7 @@ import time
 from consts import SHUTDOWN, REBOOT, EXIT
 from oled import OLEDCtrl
 from scene import Scene
+import utils
 
 def prepare_ctrl():
 
@@ -23,17 +24,42 @@ def prepare_ctrl():
 
     # scene 1
     def s1_init(state):
-         state['select'] = 0
+         state['counter'] = 0
+
 
     def s1_draw(state, disp):
-        line = '1 pressed hahahadsflkjasl lask'
-        for idx in (0, 1):
-            if state['select'] == idx:
-                disp.putline(line, inverted=True, mode='scroll')
-            else:
-                disp.putline(line)
 
-    s1 = Scene(draw_func=s1_draw, init_func=s1_init)
+        if state['counter'] % 10 != 0:
+            return
+
+        def pl(line):
+            disp.putline(line, mode='scroll')
+
+        ip_lines = utils.get_ip_lines()
+        for line in ip_lines:
+            if not line:
+                continue
+
+            if line.startswith('lo '):
+                continue
+
+            pl(line)
+
+        pl('')
+
+        cpu_load_line = utils.get_cpu_load_line()
+        pl(cpu_load_line)
+
+        cpu_temp_line = utils.get_cpu_temp_line()
+        pl(cpu_temp_line)
+
+        mem_line = utils.get_mem_line()
+        pl(mem_line)
+
+        disk_line = utils.get_disk_line()
+        pl(disk_line)
+
+    s1 = Scene(draw_func=s1_draw, init_func=s1_init, refresh_interval=0.5)
 
     # scene 2
     def s2_draw(state, disp):
@@ -73,13 +99,9 @@ def prepare_ctrl():
     )
 
     # s1 keymap
-    def s1_key1_handler(state):
-        state['select'] = 1 - state['select']
-        return (None, [('setframe', 0)])
-
-    s1.add_keymap_entry(1, s1_key1_handler)
 
     s1.add_keymap_entries(
+        (1, s0),
         (2, s2),
         (3, s3),
     )
