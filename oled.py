@@ -278,14 +278,10 @@ class OLEDCtrl(object):
             self.bus.write_i2c_block_data(0x3c, 0x40, block)
 
     def clear_buffer(self):
-        for i in range(self.line_num):
-            if i in self.buffer:
-                del(self.buffer[i])
+        self.buffer.clear()
 
     def clear_lines(self):
-        for i in range(self.line_num):
-            if i in self.lines:
-                del(self.lines[i])
+        self.lines.clear()
 
     def display_off(self, force=False):
         if (not self.display_already_off) or force:
