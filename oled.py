@@ -116,7 +116,7 @@ class OLEDCtrl(object):
 
             if new_scene:
                 self.scene = new_scene
-                new_scene = self.scene.init(self)
+                new_scene = self.scene.init()
                 self.scene.run_post_cmds()
 
                 if new_scene:
@@ -165,10 +165,10 @@ class OLEDCtrl(object):
         self.display_off(force=True)
         time.sleep(1)
 
-        if self.scene == SHUTDOWN:
+        if int(self.scene) == SHUTDOWN:
             print("shutdown!")
             os.system('shutdown now')
-        elif self.scene == REBOOT:
+        elif int(self.scene) == REBOOT:
             print("reboot!")
             os.system('reboot')
         else:

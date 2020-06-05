@@ -19,7 +19,7 @@ class Scene(object):
     def __init__(self, _id=None, draw_func=None, init_func=None, keymap=None, keyfunc=None,
                  clear=True, line_mode=True, flush=True, keep_state=False, refresh_interval=0.1):
 
-        if _if:
+        if _id:
             self._id = _id
         else:
             self._id = self._next_id
@@ -53,7 +53,7 @@ class Scene(object):
         else:
             return None
 
-    def init(self, oledctrl, reset_frame=True):
+    def init(self, reset_frame=True):
         # self._init_func may be empty
         if reset_frame:
             self.frame = 0
@@ -62,7 +62,7 @@ class Scene(object):
             if not self.keep_state:
                 self._state.clear()
 
-            res = self._init_func(self._state, oledctrl)
+            res = self._init_func(self._state)
             self._process_result(res)
 
     def draw(self, putline, inc_frame=1):

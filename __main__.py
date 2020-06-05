@@ -19,7 +19,7 @@ def prepare_ctrl():
     def s0_draw(state, disp):
         disp.gen_random_splash()
 
-    s0 = Scene(draw_func=draw0, line_mode=False, refresh_interval=1)
+    s0 = Scene(draw_func=s0_draw, line_mode=False, refresh_interval=1)
 
     # scene 1
     def s1_init(state):
@@ -48,7 +48,7 @@ def prepare_ctrl():
         state['idx2opt'] = dict(enumerate(['cancel', 'shutdown', 'reboot']))
         state['handlers'] = {}
 
-    def draw3(state, disp):
+    def s3_draw(state, disp):
         selected = state['selected']
         idx2opt = state['idx2opt']
 
@@ -63,7 +63,7 @@ def prepare_ctrl():
         disp.putline('F1: Confirm')
         disp.putline('F3: Cycle opts')
 
-    s3 = Scene(init_func=init3, draw_func=draw3)
+    s3 = Scene(init_func=s3_init, draw_func=s3_draw)
 
     # s0 keymap
     s0.add_keymap_entries(
@@ -98,14 +98,15 @@ def prepare_ctrl():
         selected = state['selected']
         idx2opt = state['idx2opt']
         selected_opt = idx2opt[selected]
-
+        print(selected_opt)
         if selected_opt == 'cancel':
-            new_scene = s_0
+            new_scene = s0
         elif selected_opt == 'reboot':
             new_scene = s_reboot
         else:
             new_scene = s_shutdown
 
+        print('state:', int(new_scene))
         return (new_scene, [])
 
     s3.add_keymap_entry(1, s3_key1_handler)
@@ -115,6 +116,7 @@ def prepare_ctrl():
         selected = state['selected']
         opt_num = len(state['idx2opt'])
         state['selected'] = (selected + 1) % opt_num
+        print(state['selected'])
 
     s3.add_keymap_entry(3, s3_key3_handler)
 
