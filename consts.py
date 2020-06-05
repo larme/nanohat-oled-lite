@@ -1,0 +1,3 @@
+SHUTDOWN = -1
+REBOOT = -2
+EXIT = -3

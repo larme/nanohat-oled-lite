@@ -2,8 +2,12 @@ cmd_map = {}
 
 def setframe(scene, n):
     scene.frame = n
+
+def addframe(scene, n):
+    scene.frame += n
     
 cmd_map['setframe'] = setframe
+cmd_map['addframe'] = addframe
 
 class Scene(object):
     _next_id = 0
@@ -12,12 +16,14 @@ class Scene(object):
     def _inc_next_id(cls):
         cls._next_id += 1
 
-    def __init__(self,
-                 draw_func, init_func=None, keymap=None, keyfunc=None,
-                 clear=True, flush=True, refresh_interval=0.1):
+    def __init__(self, _id=None, draw_func=None, init_func=None, keymap=None, keyfunc=None,
+                 clear=True, line_mode=True, flush=True, keep_state=False, refresh_interval=0.1):
 
-        self._id = self._next_id
-        self._inc_next_id()
+        if _if:
+            self._id = _id
+        else:
+            self._id = self._next_id
+            self._inc_next_id()
 
         self._init_func = init_func
         self._draw_func = draw_func
@@ -25,14 +31,27 @@ class Scene(object):
         self._keyfunc = keyfunc
 
         self.clear = clear
+        self.line_mode = line_mode
         self.flush = flush
         self.refresh_interval = refresh_interval
+        self.keep_state = keep_state
 
-        self._state = {}
         self.frame = 0
+        self._state = {}
+        self._post_cmds = []
 
     def __int__(self):
         return self._id
+
+    # helper functions either return (new_scene, cmds) or None
+    # set new_scene = None if there's no scene switch
+    def _process_result(self, res):
+        if res:
+            new_scene, cmds = res
+            self.handle_cmds(cmds)
+            return new_scene
+        else:
+            return None
 
     def init(self, oledctrl, reset_frame=True):
         # self._init_func may be empty
@@ -40,14 +59,27 @@ class Scene(object):
             self.frame = 0
 
         if self._init_func:
-            new_state, cmds = self._init_func(self._state, oledctrl)
-            self.handle_cmds(cmds)
-            return new_state
+            if not self.keep_state:
+                self._state.clear()
 
-    def draw(self, oledctrl, inc_frame=1):
-        new_state, cmds = self._draw_func(self._state, oledctrl)
-        self.handle_cmds(cmds)
-        return inc_frame
+            res = self._init_func(self._state, oledctrl)
+            self._process_result(res)
+
+    def draw(self, putline, inc_frame=1):
+        inc_frame_cmd = 'post_addframe'
+        inc_frame_cmdl = (inc_frame_cmd, inc_frame)
+
+        if self._draw_func:
+
+            res = self._draw_func(self._state, putline)
+        
+            if res:
+                new_scene, cmds = res
+            else:
+                res = (None, [inc_frame_cmdl])
+        else:
+            res = (None, [inc_frame_cmdl])
+        return self._process_result(res)
 
     def add_keymap_entry(self, key, entry):
         self._keymap[key] = entry
@@ -70,24 +102,41 @@ class Scene(object):
 
         if self._keyfunc:
             res = self._keyfunc(key, self._state)
-        else:
+
+        elif self._keymap:
             handler = self._keymap[key]
             try:
                 res = handler(self._state)
             except TypeError as e:
-                res = (handler, ())
+                res = (handler, [])
+        else:
+            res = (handler, [])
 
-        new_state, cmds = res
-        self.handle_cmds(cmds)
-        return new_state
+        return self._process_result(res)
 
     def handle_cmds(self, cmds):
         if cmds:
             for cmdl in cmds:
                 cmd = cmdl[0]
                 args = cmdl[1:]
-                self.handle_cmd(cmd, args)
+
+                if cmd.startswith('post_'):
+                    cmd = cmd.replace('post_', '', 1)
+                    new_cmdl = (cmd, ) + tuple(args)
+                    self.push_to_post_cmds(new_cmdl)
+                else:
+                    self.handle_cmd(cmd, args)
 
     def handle_cmd(self, cmd, args):
         cmd_f = cmd_map[cmd]
         cmd_f(self, *args)
+
+    def push_to_post_cmds(self, cmdl):
+        self._post_cmds.append(cmdl)
+
+    def run_post_cmds(self):
+        if self._post_cmds:
+            cmds = self._post_cmds
+            self._post_cmds = []
+            self.handle_cmds(cmds)
+

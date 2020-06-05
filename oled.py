@@ -4,6 +4,7 @@ import smbus2 as smbus
 import subprocess
 import time
 
+from consts import SHUTDOWN, REBOOT, EXIT
 from fonts import normal_font, inverted_font, unknown_char
 
 KEY2PIN = {
@@ -11,9 +12,6 @@ KEY2PIN = {
     2: 2,
     3: 3,
 }
-
-REBOOT = -2
-SHUTDOWN = -1
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -45,6 +43,7 @@ class OLEDCtrl(object):
 
         self.scene = init_scene
         self.pending_key = None
+        self.pending_scene = None
         self.lines = {}
         self.buffer = {}
 
@@ -106,15 +105,27 @@ class OLEDCtrl(object):
                 continue
 
             # not here until all key are released
-            # if pending_key exists, update scene use the corresponding
+            # if pending_key or pending_scene exists, update scene
+
+            new_scene = self.pending_scene
+            self.pending_scene = None
+
             if self.pending_key:
                 new_scene = self.scene.handle_key(self.pending_key)
+                self.pending_key = None
+
+            if new_scene:
+                self.scene = new_scene
+                new_scene = self.scene.init(self)
+                self.scene.run_post_cmds()
 
                 if new_scene:
-                    self.scene = new_scene
-                    self.scene.init(self)
+                    self.pending_scene = new_scene
+                    new_scene = None
 
-                self.pending_key = None
+            if int(self.scene) in (SHUTDOWN, REBOOT, EXIT):
+                # or just break?
+                self.loop_break = True
 
             if self.current_time > self.display_off_time:
                 self.display_off()
@@ -129,12 +140,16 @@ class OLEDCtrl(object):
 
                 # scene draw lines to self.lines
                 print(s.frame)
-                inc_frame = s.draw(self)
+                new_scene = s.draw(self)
                 self.render(clear=s.clear,
                             flush=s.flush,
+                            line_mode=s.line_mode,
                             refresh_interval=s.refresh_interval)
-                s.frame += inc_frame
 
+                s.run_post_cmds()
+                if new_scene:
+                    self.pending_scene = new_scene
+                    new_scene = None
 
     def cleanup(self):
 
@@ -195,9 +210,12 @@ class OLEDCtrl(object):
 
         self.lines[pos] = (line, inverted, mode)
 
-    def render(self, clear, flush, refresh_interval):
+    def render(self, clear, line_mode, flush, refresh_interval):
         if clear:
             self.clear_buffer()
+
+        if line_mode:
+            self.lines_to_buffer()
 
         if flush:
             self.display_flush()
@@ -206,7 +224,6 @@ class OLEDCtrl(object):
             self.set_display_next_refresh_time(refresh_interval)
 
     def display_flush(self):
-        self.lines_to_buffer()
         self.render_buffer()
 
     def lines_to_buffer(self):
