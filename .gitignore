@@ -1,6 +1,4 @@
-conf.py
-conf_v3.py
-log.txt
+__main__.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

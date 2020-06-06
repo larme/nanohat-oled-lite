@@ -47,3 +47,13 @@ def get_saved_connections():
         parsed.append(d)
 
     return parsed
+
+def run_cmd_with_timeout(cmd, timeout=None):
+    try:
+        out = subprocess.check_output(cmd, shell=True, timeout=timeout)
+        out = out.decode('utf-8')
+        return (0, out)
+    except subprocess.TimeoutExpired as e:
+        return (-1, 'time out')
+    except subprocess.CalledProcessError as e:
+        return (e.returncode, 'cmd problem')
