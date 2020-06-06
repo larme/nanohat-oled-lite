@@ -127,7 +127,10 @@ class OLEDCtrl(object):
                 new_scene = self.scene.handle_key(self.pending_key)
                 self.pending_key = None
 
+            # scene change happens here only
             if new_scene:
+                self.scene.finish()
+                self.scene.run_post_cmds()
                 self.scene = new_scene
                 new_scene = self.scene.init()
                 self.scene.run_post_cmds()

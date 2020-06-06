@@ -16,8 +16,11 @@ class Scene(object):
     def _inc_next_id(cls):
         cls._next_id += 1
 
-    def __init__(self, _id=None, draw_func=None, init_func=None, keymap=None, keyfunc=None,
-                 clear=True, line_mode=True, flush=True, keep_state=False, refresh_interval=0.1):
+    def __init__(self, _id=None,
+                 draw_func=None, init_func=None, finish_func=None,
+                 keymap=None, keyfunc=None,
+                 clear=True, line_mode=True, flush=True, keep_state=False,
+                 refresh_interval=0.1):
 
         if _id:
             self._id = _id
@@ -27,6 +30,7 @@ class Scene(object):
 
         self._init_func = init_func
         self._draw_func = draw_func
+        self._finish_func = finish_func
         self._keymap = keymap if keymap else {}
         self._keyfunc = keyfunc
 
@@ -63,7 +67,7 @@ class Scene(object):
                 self._state.clear()
 
             res = self._init_func(self._state)
-            self._process_result(res)
+            return self._process_result(res)
 
     def draw(self, display, inc_frame=1):
         inc_frame_cmd = 'post_addframe'
@@ -80,6 +84,11 @@ class Scene(object):
         else:
             res = (None, [inc_frame_cmdl])
         return self._process_result(res)
+
+    def finish(self):
+        if self._finish_func:
+            res = self._finish_func()
+            return self._process_result(res)
 
     def add_keymap_entry(self, key, entry):
         self._keymap[key] = entry
