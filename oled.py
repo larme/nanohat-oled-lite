@@ -113,6 +113,11 @@ class OLEDCtrl(object):
                 continue
 
             # not here until all key are released
+            # if display is still off, key press just wake up display
+
+            if self.display_already_off:
+                self.pending_key = None
+
             # if pending_key or pending_scene exists, update scene
 
             new_scene = self.pending_scene
