@@ -65,13 +65,13 @@ class Scene(object):
             res = self._init_func(self._state)
             self._process_result(res)
 
-    def draw(self, putline, inc_frame=1):
+    def draw(self, display, inc_frame=1):
         inc_frame_cmd = 'post_addframe'
         inc_frame_cmdl = (inc_frame_cmd, inc_frame)
 
         if self._draw_func:
 
-            res = self._draw_func(self._state, putline)
+            res = self._draw_func(self._state, display)
         
             if res:
                 new_scene, cmds = res
