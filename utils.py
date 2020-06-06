@@ -1,27 +1,22 @@
 import subprocess
 
 def get_cpu_load_line():
-    cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
+    cmd = "top -bn1 | grep load | awk '{printf \"cpu load: %.2f\", $(NF-2)}'"
     out = subprocess.check_output(cmd, shell=True)
     return out.decode('utf-8')
 
 def get_cpu_temp_line():
-    cmd = "cat /sys/class/thermal/thermal_zone0/temp | awk '{printf \"CPU temp: %3.1fc\", $1/1000}'"
+    cmd = "cat /sys/class/thermal/thermal_zone0/temp | awk '{printf \"cpu temp: %3.1fc\", $1/1000}'"
     out = subprocess.check_output(cmd, shell=True)
     return out.decode('utf-8')
 
 def get_mem_line():
-    cmd = "free -m | awk 'NR==2{printf \"RAM:  %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
+    cmd = "free -m | awk 'NR==2{printf \"ram:  %s/%sMB\", $3,$2}'"
     out = subprocess.check_output(cmd, shell=True)
     return out.decode('utf-8')
 
 def get_disk_line():
-    cmd = "df -h | awk '$NF==\"/\"{printf \"Card: %d/%dGB %s\", $3,$2,$5}'"
-    out = subprocess.check_output(cmd, shell=True)
-    return out.decode('utf-8')
-
-def get_disk_line():
-    cmd = "df -h | awk '$NF==\"/\"{printf \"disk: %d/%dGB %s\", $3,$2,$5}'"
+    cmd = "df -h | awk '$NF==\"/\"{printf \"disk: %d/%dGB\", $3,$2}'"
     out = subprocess.check_output(cmd, shell=True)
     return out.decode('utf-8')
 
