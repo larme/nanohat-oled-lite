@@ -120,7 +120,7 @@ def prepare_ctrl():
         selected = state['selected']
         idx2opt = state['idx2opt']
         selected_opt = idx2opt[selected]
-        print(selected_opt)
+
         if selected_opt == 'cancel':
             new_scene = s0
         elif selected_opt == 'reboot':
@@ -128,7 +128,6 @@ def prepare_ctrl():
         else:
             new_scene = s_shutdown
 
-        print('state:', int(new_scene))
         return (new_scene, [])
 
     s3.add_keymap_entry(1, s3_key1_handler)
@@ -138,7 +137,6 @@ def prepare_ctrl():
         selected = state['selected']
         opt_num = len(state['idx2opt'])
         state['selected'] = (selected + 1) % opt_num
-        print(state['selected'])
 
     s3.add_keymap_entry(3, s3_key3_handler)
 
