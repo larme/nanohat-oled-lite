@@ -23,13 +23,15 @@ class OLEDCtrl(object):
 
     def __init__(self, init_scene,
                  key2pin=KEY2PIN, keys=(1, 2, 3),
-                 bus_num=0, polling_interval=0.05, display_off_timeout=30.0,
+                 bus_num=0, display_off_timeout=30.0,
+                 polling_interval=0.2, turbo_polling_interval=0.01,
                  line_length=16, line_num=8):
 
         self.keys = keys
         self.key2pin = key2pin
         self.bus = smbus.SMBus(bus_num)
         self.polling_interval = polling_interval
+        self.turbo_polling_interval = turbo_polling_interval
         self.display_off_timeout = display_off_timeout
         self.line_length = line_length
         self.line_num = line_num
@@ -92,7 +94,13 @@ class OLEDCtrl(object):
     def loop(self):
 
         while not self.loop_break:
-            time.sleep(self.polling_interval)
+
+            if self.display_already_off:
+                polling_interval = self.polling_interval
+            else:
+                polling_interval = self.turbo_polling_interval
+
+            time.sleep(polling_interval)
             self.current_time = time.time()
 
             if self.keydown(1):
