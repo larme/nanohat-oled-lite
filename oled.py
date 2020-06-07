@@ -43,7 +43,7 @@ class OLEDCtrl(object):
 
         self.display_already_off = False
 
-        self.scene = init_scene
+        self._scenes = [init_scene]
         self.pending_key = None
         self.pending_scene = None
         self.lines = {}
@@ -51,6 +51,20 @@ class OLEDCtrl(object):
 
         self.splash = []
         self.gen_random_splash()
+
+    @property
+    def scene(self):
+        return self._scenes[-1]
+
+    @scene.setter
+    def scene(self, new_scene):
+        self._scenes[-1] = new_scene
+
+    def push_scene(self, new_scene):
+        self._scenes.append(new_scene)
+
+    def pop_scene(self):
+        return self._scenes.pop()
 
     def init_setup(self):
 
@@ -129,9 +143,24 @@ class OLEDCtrl(object):
 
             # scene change happens here only
             if new_scene:
-                self.scene.finish()
-                self.scene.run_post_cmds()
-                self.scene = new_scene
+                try:
+                    new_scene, action = new_scene
+                except TypeError:
+                    action = 'normal'
+
+                if action == 'pop':
+                    self.scene.finish()
+                    self.scene.run_post_cmds()
+                    self.pop_scene
+
+                elif action == 'push':
+                    self.push_scene(new_scene)
+
+                elif action == 'normal':
+                    self.scene.finish()
+                    self.scene.run_post_cmds()
+                    self.scene = new_scene
+
                 new_scene = self.scene.init()
                 self.scene.run_post_cmds()
 
