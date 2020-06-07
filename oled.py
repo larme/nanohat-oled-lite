@@ -272,10 +272,12 @@ class OLEDCtrl(object):
         self.render_buffer()
 
     def lines_to_buffer(self):
+        offset = 0
         for pos in range(self.line_num):
             line = self.lines.get(pos)
             if line:
-                self.line_to_buffer(pos, *line)
+                delta = self.line_to_buffer(pos + offset, *line)
+                offset += delta
 
     def line_to_buffer(self, pos, line, inverted, mode):
 
@@ -308,6 +310,8 @@ class OLEDCtrl(object):
 
         for idx, line in enumerate(lines):
             self._line_to_buffer(pos + idx, line, inverted)
+
+        return len(lines) - 1
 
     # here len(line) <= self.line_length
     def _line_to_buffer(self, pos, line, inverted):

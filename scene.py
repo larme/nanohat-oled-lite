@@ -20,7 +20,7 @@ class Scene(object):
 
     def __init__(self, _id=None,
                  draw_func=None, init_func=None, finish_func=None,
-                 keymap=None, keyfunc=None,
+                 keymap=None, key_func=None,
                  clear=True, line_mode=True, flush=True, keep_state=False,
                  refresh_interval=0.1):
 
@@ -34,7 +34,7 @@ class Scene(object):
         self._draw_func = draw_func
         self._finish_func = finish_func
         self._keymap = keymap if keymap else {}
-        self._keyfunc = keyfunc
+        self._key_func = key_func
 
         self.clear = clear
         self.line_mode = line_mode
@@ -103,16 +103,16 @@ class Scene(object):
         """handle key input/press
 
         Parameters:
-        key: either parameter used by `self._keyfunc` or key of `self._keymap`
+        key: either parameter used by `self._key_func` or key of `self._keymap`
 
         Returns:
         Scene: new scene.
         if scene does not change return None
 
-        if `self._keyfunc` exist, then use it first"""
+        if `self._key_func` exist, then use it first"""
 
-        if self._keyfunc:
-            res = self._keyfunc(key, self._state)
+        if self._key_func:
+            res = self._key_func(key, self._state)
 
         elif self._keymap:
             handler = self._keymap[key]
