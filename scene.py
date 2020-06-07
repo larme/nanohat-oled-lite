@@ -154,9 +154,11 @@ class Scene(object):
 # scene for simply display messages
 class MessageScene(Scene):
 
-    def __init__(self, messages, accept_key=True, timeout=None, **kwargs):
+    def __init__(self, messages, mode='wrap', accept_key=True, timeout=None, **kwargs):
 
         super().__init__(**kwargs)
+
+        popme = (('pop', None), [])
 
         def init_func(state):
             state['messages'] = messages
@@ -165,11 +167,16 @@ class MessageScene(Scene):
 
         def draw_func(state, disp):
             for message in messages:
-                disp.putline(message, mode='wrap')
+                disp.putline(message, mode=mode)
             end_time = state.get('end_time')
             if end_time and time.time() > end_time:
                 print(time.time(), end_time)
-                return (('pop', None), [])
+                return popme
 
         self._init_func = init_func
         self._draw_func = draw_func
+
+        if accept_key:
+            def key_func(key, state):
+                return popme
+            self._key_func = key_func
