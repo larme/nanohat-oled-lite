@@ -1,3 +1,5 @@
+import time
+
 cmd_map = {}
 
 def setframe(scene, n):
@@ -149,3 +151,25 @@ class Scene(object):
             self._post_cmds = []
             self.handle_cmds(cmds)
 
+# scene for simply display messages
+class MessageScene(Scene):
+
+    def __init__(self, messages, accept_key=True, timeout=None, **kwargs):
+
+        super().__init__(**kwargs)
+
+        def init_func(state):
+            state['messages'] = messages
+            if timeout:
+                state['end_time'] = time.time() + timeout
+
+        def draw_func(state, disp):
+            for message in messages:
+                disp.putline(message, mode='wrap')
+            end_time = state.get('end_time')
+            if end_time and time.time() > end_time:
+                print(time.time(), end_time)
+                return (('pop', None), [])
+
+        self._init_func = init_func
+        self._draw_func = draw_func
