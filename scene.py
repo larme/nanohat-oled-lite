@@ -119,7 +119,7 @@ class Scene(object):
             except TypeError as e:
                 res = (handler, [])
         else:
-            res = (handler, [])
+            res = (None, [])
 
         return self._process_result(res)
 
