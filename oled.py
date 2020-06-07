@@ -144,14 +144,14 @@ class OLEDCtrl(object):
             # scene change happens here only
             if new_scene:
                 try:
-                    new_scene, action = new_scene
+                    action, new_scene = new_scene
                 except TypeError:
                     action = 'normal'
 
                 if action == 'pop':
                     self.scene.finish()
                     self.scene.run_post_cmds()
-                    self.pop_scene
+                    self.pop_scene()
 
                 elif action == 'push':
                     self.push_scene(new_scene)
