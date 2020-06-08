@@ -277,6 +277,9 @@ class OLEDCtrl(object):
             line = self.lines.get(pos)
             if line:
                 delta = self.line_to_buffer(pos + offset, *line)
+                # pos + offset may > self.line_num
+                if not delta:
+                    break
                 offset += delta
 
     def line_to_buffer(self, pos, line, inverted, mode):
