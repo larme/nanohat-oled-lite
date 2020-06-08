@@ -180,3 +180,90 @@ class MessageScene(Scene):
             def key_func(key, state):
                 return (popme, [])
             self._key_func = key_func
+
+# scene for simple keyboard input
+class KbInputScene(Scene):
+
+    def __init__(self, input_finish_func,
+                 previous_scene=None, password=False, cancel_fkey=3,
+                 confirm_key='enter', cancel_key='cancel', delete_key='delete',
+                 **kwargs):
+
+        super.__init__(**kwargs)
+
+        self.password = password
+        self.cancel_fkey = cancel_fkey
+        self.confirm_key = confirm_key
+        self.cancel_key = cancel_key
+        self.delete_key = delete_key
+
+        self.lock = threading.Lock()
+        self.status = ''
+        self.buffer = []
+        self.hooked = None
+
+        import threading
+        import keyboard
+
+        def init_func(state):
+
+            self.status = 'normal'
+            self.buffer = []
+
+            # install a keyboard hook
+            self.hooked = None
+
+            def hook_func(e):
+                if e.event_type != 'down':
+                    return
+
+                key = e.name
+
+                if key == self.cancel:
+                    with self.lock:
+                        self.buffer = []
+                        self.status = 'cancel'
+                        self.unhook()
+
+                elif key == self.confirm:
+                    with self.lock:
+                        self.status = 'confirmed'
+                        self.unhook()
+
+                elif key == self.delete:
+                    with self.lock:
+                        if self.buffer:
+                            self.buffer.pop()
+
+                elif len(key) == 1:
+                    with self.lock:
+                        self.buffer.append(key)
+
+            self.hooked = keyboard.hook(hook_func)
+
+            return self.hooked
+
+        self.init_func = init_func
+
+        def draw_func(state, disp):
+            with self.lock:
+                s = ''.join(self.buffer)
+                disp.putline(s, mode='wrap')
+                disp.putline(self.status)
+
+        self.draw_func = draw_func
+
+        def key_func(key, state):
+            if key == cancel_fkey:
+                self.unhook()
+                if self.previous_scene:
+                    return (self.previous_scene, [])
+                else:
+                    return (popme, [])
+
+
+    def unhook(self):
+        try:
+            keyboard.unhook(self.hooked)
+        except KeyError:
+            pass
