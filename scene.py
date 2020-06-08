@@ -170,7 +170,6 @@ class MessageScene(Scene):
                 disp.putline(message, mode=mode)
             end_time = state.get('end_time')
             if end_time and time.time() > end_time:
-                print(time.time(), end_time)
                 return (popme, [])
 
         self._init_func = init_func
@@ -184,26 +183,28 @@ class MessageScene(Scene):
 # scene for simple keyboard input
 class KbInputScene(Scene):
 
-    def __init__(self, input_finish_func,
+    def __init__(self, input_finish_func, message='type',
                  previous_scene=None, password=False, cancel_fkey=3,
-                 confirm_key='enter', cancel_key='cancel', delete_key='delete',
+                 confirm_keys={'enter'}, cancel_keys={'esc'},
+                 delete_keys={'delete', 'backspace'},
                  **kwargs):
 
-        super.__init__(**kwargs)
+        import threading
+        import keyboard
 
+        super().__init__(**kwargs)
+
+        self.previous_scene = previous_scene
         self.password = password
         self.cancel_fkey = cancel_fkey
-        self.confirm_key = confirm_key
-        self.cancel_key = cancel_key
-        self.delete_key = delete_key
+        self.confirm_keys = confirm_keys
+        self.cancel_keys = cancel_keys
+        self.delete_keys = delete_keys
 
         self.lock = threading.Lock()
         self.status = ''
         self.buffer = []
         self.hooked = None
-
-        import threading
-        import keyboard
 
         def init_func(state):
 
@@ -219,18 +220,18 @@ class KbInputScene(Scene):
 
                 key = e.name
 
-                if key == self.cancel:
+                if key in self.cancel_keys:
                     with self.lock:
                         self.buffer = []
                         self.status = 'cancel'
                         self.unhook()
 
-                elif key == self.confirm:
+                elif key in self.confirm_keys:
                     with self.lock:
                         self.status = 'confirmed'
                         self.unhook()
 
-                elif key == self.delete:
+                elif key in self.delete_keys:
                     with self.lock:
                         if self.buffer:
                             self.buffer.pop()
@@ -241,17 +242,22 @@ class KbInputScene(Scene):
 
             self.hooked = keyboard.hook(hook_func)
 
-            return self.hooked
-
-        self.init_func = init_func
+        self._init_func = init_func
 
         def draw_func(state, disp):
+
             with self.lock:
-                s = ''.join(self.buffer)
+                l = self.buffer
+                char_num = len(l)
+                if char_num > 1 and self.password:
+                    l = ['*'] * (char_num - 1) + [l[-1]]
+
+                s = ''.join(l)
+                disp.putline(message + ", F%d to cancel" % self.cancel_fkey)
                 disp.putline(s, mode='wrap')
                 disp.putline(self.status)
 
-        self.draw_func = draw_func
+        self._draw_func = draw_func
 
         def key_func(key, state):
             if key == cancel_fkey:
@@ -261,8 +267,10 @@ class KbInputScene(Scene):
                 else:
                     return (popme, [])
 
+        self._key_func = key_func
 
     def unhook(self):
+        import keyboard
         try:
             keyboard.unhook(self.hooked)
         except KeyError:
