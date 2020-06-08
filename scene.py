@@ -11,6 +11,8 @@ def addframe(scene, n):
 cmd_map['setframe'] = setframe
 cmd_map['addframe'] = addframe
 
+popme = ('pop', None)
+
 class Scene(object):
     _next_id = 0
 
@@ -158,8 +160,6 @@ class MessageScene(Scene):
 
         super().__init__(**kwargs)
 
-        popme = (('pop', None), [])
-
         def init_func(state):
             state['messages'] = messages
             if timeout:
@@ -171,12 +171,12 @@ class MessageScene(Scene):
             end_time = state.get('end_time')
             if end_time and time.time() > end_time:
                 print(time.time(), end_time)
-                return popme
+                return (popme, [])
 
         self._init_func = init_func
         self._draw_func = draw_func
 
         if accept_key:
             def key_func(key, state):
-                return popme
+                return (popme, [])
             self._key_func = key_func
