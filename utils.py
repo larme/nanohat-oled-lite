@@ -48,6 +48,31 @@ def get_saved_connections():
 
     return parsed
 
+def get_wifi_aps():
+    cmd = 'nmcli -t device wifi list'
+    out = subprocess.check_output(cmd, shell=True)
+    out = out.decode('utf-8')
+    lines = out.split('\n')
+
+    parsed = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        line = line.replace(r'\:', '-')
+        line = line.replace(r'\\', '-')
+        print("haha", line)
+        fields = line.split(':')
+        in_use, ssid, _, _, _, strength, _, _ = fields
+
+        d = {}
+        d['in_use'] = 1 if in_use.strip() else 0
+        d['strength'] = int(strength)
+        d['ssid'] = ssid
+        parsed.append(d)
+
+    return parsed
+
 def run_cmd_with_timeout(cmd, timeout=None):
     try:
         out = subprocess.check_output(cmd, shell=True, timeout=timeout)
