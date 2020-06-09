@@ -3,7 +3,7 @@ from operator import itemgetter
 
 from consts import SHUTDOWN, REBOOT, EXIT
 from oled import OLEDCtrl
-from scene import Scene
+from scene import Scene, MessageScene, KbInputScene, popme
 import utils
 
 def prepare_ctrl():
@@ -123,6 +123,46 @@ def prepare_ctrl():
 
     s3 = Scene(init_func=s3_init, draw_func=s3_draw)
 
+    # scene 4 add wifi ap
+    def s4_init(state):
+        state['selected'] = 0
+        aps = utils.get_wifi_aps()
+        faps = [ap for ap in aps if ap['in_use'] == 0]
+        faps.sort(key=itemgetter('strength', 'ssid'), reverse=True)
+        state['aps'] = faps
+
+    def s4_draw(state, disp):
+        aps = state['aps']
+        selected = state['selected']
+
+        def format_strenght(n):
+            return str(n) if n < 100 else '??'
+
+        ap_lines = [format_strenght(ap['strength']) + ' ' + ap['ssid'] for ap in aps]
+        lines = ['cancel'] + ap_lines
+
+        if selected >= disp.line_num:
+            start = selected - disp.line_num + 1
+            end = selected + 1
+        else:
+            start = 0
+            end = disp.line_num
+
+        on_screen_lines = lines[start:end]
+
+        for idx, line in enumerate(on_screen_lines):
+
+            if start + idx == state['selected']:
+                inverted = True
+                mode = 'scroll'
+            else:
+                inverted = False
+                mode = 'truncate'
+
+            disp.putline(line, inverted=inverted, mode=mode)
+
+    s4 = Scene(init_func=s4_init, draw_func=s4_draw)
+
     # s0 keymap
     s0.add_keymap_entries(
         (1, s1),
@@ -150,9 +190,8 @@ def prepare_ctrl():
             new_scene = s0
         elif selected == conn_num + 1:
             # 'new connection' -> new connection scene
-            new_scene = s0 #s_new_conn
+            new_scene = ('push', s4)
         else:
-
             selected_conn = conns[selected - 1]
             up = selected_conn['up']
             uuid = selected_conn['uuid']
@@ -165,7 +204,7 @@ def prepare_ctrl():
             cmd_tmpl = 'nmcli connection %s uuid %s'
             cmd = cmd_tmpl % (action, uuid)
             code, msg = utils.run_cmd_with_timeout(cmd, 15)
-            new_scene = s2
+            new_scene = None
 
         return (new_scene, [])
 
@@ -209,6 +248,58 @@ def prepare_ctrl():
 
     s3.add_keymap_entries(
         (2, s2),
+    )
+
+
+    # s4 keymap
+
+    # create a new scene for connect to certain ap
+    def create_ap_connect_scene(ssid):
+        cmd_tmpl = 'nmcli device wifi connect "%s" password "%s"'
+        message = 'input password for %s' % ssid
+
+        def input_finish_func(s, status, state):
+            if status == 'cancel':
+                return (popme, [])
+            elif status == 'confirmed':
+                passwd = s
+                cmd = cmd_tmpl % (ssid, passwd)
+                utils.run_cmd_with_timeout(cmd, 100)
+                return (s2, [])
+
+        apc_scene = KbInputScene(input_finish_func,
+                                 message=message,
+                                 password=True)
+        return apc_scene
+
+    def s4_key1_handler(state):
+        selected = state['selected']
+        aps = state['aps']
+        ap_num = len(aps)
+
+        if selected == 0:
+            # 'cancel' -> back to previous scene
+            new_scene = popme
+
+        else:
+            selected_ap = aps[selected - 1]
+            selected_ssid = selected_ap['ssid']
+            new_scene = create_ap_connect_scene(selected_ssid)
+            new_scene = ('push', new_scene)
+
+        return (new_scene, [])
+
+    # cycle through options
+    def s4_key2_handler(state):
+        selected = state['selected']
+        aps = state['aps']
+        ap_num = len(aps)
+        state['selected'] = (selected + 1) % (ap_num + 1)
+
+    s4.add_keymap_entries(
+        (1, s4_key1_handler),
+        (2, s4_key2_handler),
+        (3, s3),
     )
 
     ctrl = OLEDCtrl(init_scene=s0)
