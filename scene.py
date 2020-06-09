@@ -190,10 +190,13 @@ class KbInputScene(Scene):
                  **kwargs):
 
         import threading
+        from importlib import reload
         import keyboard
+        reload(keyboard)
 
         super().__init__(**kwargs)
 
+        self._input_finish_func = input_finish_func
         self.previous_scene = previous_scene
         self.password = password
         self.cancel_fkey = cancel_fkey
@@ -256,6 +259,9 @@ class KbInputScene(Scene):
                 disp.putline(message + ", F%d to cancel" % self.cancel_fkey)
                 disp.putline(s, mode='wrap')
                 disp.putline(self.status)
+                if self.status in ('cancel', 'confirmed'):
+                    s = ''.join(self.buffer)
+                    return self._input_finish_func(s, self.status, self._state)
 
         self._draw_func = draw_func
 
