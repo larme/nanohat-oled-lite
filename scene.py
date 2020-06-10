@@ -180,6 +180,18 @@ class MessageScene(Scene):
                 return (popme, [])
             self._key_func = key_func
 
+# keyboard doesn't handle shift well so we prepare our own map
+
+def _prepare_shift_keymap():
+    downs = r"""`1234567890[]-='\/;,."""
+    ups   = r"""~!@#$%^&*(){}_+"|?:<>"""
+    return dict(zip(downs, ups))
+
+_shift_keymap = _prepare_shift_keymap()
+
+def _get_shift_key(keyname):
+    return _shift_keymap.get(keyname, keyname.upper())
+
 # scene for simple keyboard input
 class KbInputScene(Scene):
 
@@ -206,6 +218,7 @@ class KbInputScene(Scene):
 
         self.lock = threading.Lock()
         self.status = ''
+        self.shift = False
         self.buffer = []
         self.hooked = None
 
@@ -218,10 +231,14 @@ class KbInputScene(Scene):
             self.hooked = None
 
             def hook_func(e):
+                key = e.name
+
+                if 'shift' in e.name and e.event_type == 'up':
+                    with self.lock:
+                        self.shift = False
+
                 if e.event_type != 'down':
                     return
-
-                key = e.name
 
                 if key in self.cancel_keys:
                     with self.lock:
@@ -239,8 +256,14 @@ class KbInputScene(Scene):
                         if self.buffer:
                             self.buffer.pop()
 
+                elif 'shift' in key:
+                    with self.lock:
+                        self.shift = True
+
                 elif len(key) == 1:
                     with self.lock:
+                        if self.shift:
+                            key = _get_shift_key(key)
                         self.buffer.append(key)
 
             self.hooked = keyboard.hook(hook_func)
